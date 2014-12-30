@@ -10,7 +10,6 @@ namespace Boid
 {
     public class Bounce : GH_Component
     {
-
         public Bounce()
             : base("Move and bounce from geometry", "BounceMove",
                 "Bounce from geometry in case the agent hits its wall. The non-bounced agents will be moved to their new location. Warning: the component is slow.",
@@ -57,17 +56,16 @@ namespace Boid
 
             //temporary outputs
 
-            Rhino.Geometry.Point3d tempPoint = point+vector;
-            Rhino.Geometry.Vector3d tempVector = vector;
+            double minSquaredDistance = double.MaxValue;
 
-            Rhino.Geometry.Line tempLine = new Rhino.Geometry.Line(point, tempPoint);
+            Rhino.Geometry.Line tempLine = new Rhino.Geometry.Line(point, point + vector);
             Rhino.Geometry.Curve tempCurve = null;
             Grasshopper.Kernel.GH_Convert.ToCurve(tempLine, ref tempCurve, GH_Conversion.Both);
 
-
-
             Rhino.Geometry.Vector3d projectedVector = Rhino.Geometry.Vector3d.Unset;
             Rhino.Geometry.Vector3d refVector = Rhino.Geometry.Vector3d.Unset;
+            Plane mirrorPlane;
+
 
             foreach (Grasshopper.Kernel.Types.GH_GeometricGooWrapper geo in geometry)
             {
@@ -77,13 +75,15 @@ namespace Boid
                 geo.CastTo<Rhino.Geometry.Plane>(ref testPlane);
                 if (testPlane.IsValid)
                 {
-                    Rhino.Geometry.Intersect.CurveIntersections intersection = Rhino.Geometry.Intersect.Intersection.CurvePlane(tempCurve, testPlane, 0.1);
+                    Rhino.Geometry.Intersect.CurveIntersections intersection = Rhino.Geometry.Intersect.Intersection.CurvePlane(tempCurve, testPlane, tempLine.Length*0.01);
                     if (intersection.Count > 0)
                     {
                         testPoint = intersection.First().PointA; ;
                         Rhino.Geometry.Transform project = Rhino.Geometry.Transform.PlanarProjection(testPlane);
                         refVector = vector;
                         refVector.Transform(project);
+                        mirrorPlane = new Plane(testPoint, refVector);
+
                     }
                 }
 
@@ -116,22 +116,25 @@ namespace Boid
                     }
                 }
 
-                if ((testPlane != null) && (testPlane.IsValid))
+                if ((mirrorPlane != null) && (mirrorPlane.IsValid))
                 {
                     Rhino.Geometry.Vector3d testVector = new Rhino.Geometry.Vector3d(testPoint - point);
                     double squaredDistance = testVector.SquareLength;
-                    if ((squaredDistance > minSquaredDistance) && ((squaredDistance < maxSquaredDistance) || (maxSquaredDistance <= 0)))
+                    if (squaredDistance > minSquaredDistance)
                     {
-                        minDistance = squaredDistance;
-                        Rhino.Geometry.Transform project = Rhino.Geometry.Transform.PlanarProjection(testPlane);
-                        projectedVector = refVector;
-                        projectedVector.Transform(project);
+                        minSquaredDistance = squaredDistance;
+                        Transform mirror = Transform.Mirror(mirrorPlane);
+                        outVector = vector;
+                        outVector.Transform(mirror);
+                        outVector.Reverse();
+                        outPoint = testPoint + outVector * (((vector.Length - testVector.Length) / outVector.Length) * slowdown);
+                        outVector *= slowdown;
                     }
                 }
             }
-
             // output
-            DA.SetData(0, projectedVector);
+            DA.SetData(0, outPoint);
+            DA.SetData(1, outVector);
         }
 
         protected override System.Drawing.Bitmap Icon
