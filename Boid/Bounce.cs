@@ -64,7 +64,7 @@ namespace Boid
 
             Rhino.Geometry.Vector3d projectedVector = Rhino.Geometry.Vector3d.Unset;
             Rhino.Geometry.Vector3d refVector = Rhino.Geometry.Vector3d.Unset;
-            Plane mirrorPlane;
+            Rhino.Geometry.Plane mirrorPlane = Rhino.Geometry.Plane.Unset;
 
 
             foreach (Grasshopper.Kernel.Types.GH_GeometricGooWrapper geo in geometry)
@@ -86,7 +86,7 @@ namespace Boid
 
                     }
                 }
-
+                /*
                 Rhino.Geometry.Mesh testMesh = null;
                 geo.CastTo<Rhino.Geometry.Mesh>(ref testMesh);
                 if (testMesh != null)
@@ -115,8 +115,8 @@ namespace Boid
                         refVector = vector;
                     }
                 }
-
-                if ((mirrorPlane != null) && (mirrorPlane.IsValid))
+                */
+                if (mirrorPlane.IsValid)
                 {
                     Rhino.Geometry.Vector3d testVector = new Rhino.Geometry.Vector3d(testPoint - point);
                     double squaredDistance = testVector.SquareLength;
