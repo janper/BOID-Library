@@ -124,6 +124,9 @@
   <data name="align" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>Resources\align.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
+  <data name="bounce" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>Resources\bounce_icon.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
   <data name="random_vector" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>Resources\random_vector.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>

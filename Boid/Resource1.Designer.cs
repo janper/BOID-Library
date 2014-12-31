@@ -83,6 +83,16 @@ namespace Boid {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap bounce {
+            get {
+                object obj = ResourceManager.GetObject("bounce", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap random_vector {
             get {
                 object obj = ResourceManager.GetObject("random_vector", resourceCulture);
