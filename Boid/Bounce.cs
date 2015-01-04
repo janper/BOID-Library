@@ -10,6 +10,7 @@ namespace Boid
 {
     public class Bounce : GH_Component
     {
+        String debug = "start;'\r\n";
         public Bounce()
             : base("Move and bounce from geometry", "BounceMove",
                 "Bounce from geometry in case the agent hits its wall. The non-bounced agents will be moved to their new location. Warning: the component is slow.",
@@ -29,10 +30,13 @@ namespace Boid
         {
             pManager.AddPointParameter("New location point", "P", "New location after bounce", GH_ParamAccess.item);
             pManager.AddVectorParameter("New motion vector", "V", "Motion vector of an agent after the bounce", GH_ParamAccess.item);
+            //pManager.AddTextParameter("Out", "out", "debug", GH_ParamAccess.item);
         }
 
         protected override void SolveInstance(IGH_DataAccess DA)
         {
+
+            debug += "------------------------\r\n";
             // Declare variables for the input
             Rhino.Geometry.Point3d point = Rhino.Geometry.Point3d.Unset;
             Rhino.Geometry.Vector3d vector = Rhino.Geometry.Vector3d.Unset;
@@ -48,9 +52,14 @@ namespace Boid
             if ((geometry.Count == 0) || (geometry == null)) { return; }
             if (point == null) { return; }
 
+            Point3d backupPoint = point;
+            Vector3d backupVector = vector;
+
             // Daclare a variables for the output
-            Rhino.Geometry.Point3d outPoint = new Point3d(point + vector);
-            Rhino.Geometry.Vector3d outVector = vector;
+            Rhino.Geometry.Point3d outPoint = Point3d.Unset;
+            Rhino.Geometry.Vector3d outVector = Vector3d.Unset;
+
+            Boolean didAnythingHappen = false;
 
             double minSquaredDistance = double.MaxValue;
 
@@ -60,26 +69,58 @@ namespace Boid
             {
                 Rhino.Geometry.Plane testPlane = Rhino.Geometry.Plane.Unset;
 
-                //test for plane
-                Grasshopper.Kernel.Types.GH_Plane ghPlane = new Grasshopper.Kernel.Types.GH_Plane();
-                ghPlane.CastFrom(geo);
-                if (ghPlane.IsValid) { ghPlane.CastTo<Plane>(out testPlane); }
-                if (testPlane.IsValid)
+                //test for BRep
+                Grasshopper.Kernel.Types.GH_Brep ghBrep = new Grasshopper.Kernel.Types.GH_Brep();
+                ghBrep.CastFrom(geo);
+                Brep testBrep = new Brep();
+                if (ghBrep.IsValid)
                 {
-                    double t;
-                    Line testLine = new Line(point, point + vector);
-                    Rhino.Geometry.Intersect.Intersection.LinePlane(testLine, testPlane, out t);
-                    testPlane.Origin = testLine.PointAt(t);
-
-                    Point3d tempPoint = Point3d.Unset;
-                    Vector3d tempVector = Vector3d.Unset;
-                    double tempMinSquareDistance = minSquaredDistance;
-
-                    if (TestSituation(point, vector, testPlane, slowdown, ref tempPoint, ref tempVector, ref tempMinSquareDistance))
+                    ghBrep.CastTo<Brep>(out testBrep);
+                    if (testBrep.IsValid)
                     {
-                        outPoint = tempPoint;
-                        outVector = tempVector;
-                        minSquaredDistance = tempMinSquareDistance;
+                        //Line testLine = new Line(point, point + vector);
+                        //Curve testCurve = null;
+                        //Grasshopper.Kernel.GH_Convert.ToCurve(testLine, ref testCurve, GH_Conversion.Both);
+
+                        List<Point3d> curvePoints = new List<Point3d>();
+                        curvePoints.Add(point);
+                        curvePoints.Add(point + vector);
+                        Curve testCurve = Curve.CreateInterpolatedCurve(curvePoints, 1);
+
+                        Curve[] overlapCurves;
+                        Point3d[] intersectionPoints;
+                        Rhino.Geometry.Intersect.Intersection.CurveBrep(testCurve, testBrep, Rhino.RhinoDoc.ActiveDoc.ModelAbsoluteTolerance * 0.01, out overlapCurves, out intersectionPoints);
+                        if (intersectionPoints.Count() > 0)
+                        {
+                            List<Point3d> intersectPoints = new List<Point3d>(intersectionPoints);
+                            intersectPoints.OrderBy(o => o.DistanceTo(point));
+                            Point3d tempPoint = intersectPoints.First();
+                            double tt;
+                            testCurve.ClosestPoint(tempPoint, out tt);
+                            if (testCurve.Domain.IncludesParameter(tt))
+                            {
+                                Point3d closestPoint = Point3d.Unset;
+                                ComponentIndex ci;
+                                double s;
+                                double t;
+                                Vector3d tempNormal = Vector3d.Unset;
+                                testBrep.ClosestPoint(tempPoint, out closestPoint, out ci, out s, out t, vector.Length, out tempNormal);
+
+                                testPlane = new Plane(tempPoint, tempNormal);
+
+                                Vector3d tempVector = Vector3d.Unset;
+                                double tempMinSquareDistance = minSquaredDistance;
+
+                                if (TestSituation(point, vector, testPlane, slowdown, ref tempPoint, ref tempVector, ref tempMinSquareDistance))
+                                {
+                                    outPoint = tempPoint;
+                                    outVector = tempVector;
+                                    minSquaredDistance = tempMinSquareDistance;
+                                    didAnythingHappen = true;
+                                    debug += "brep bounce;\r\n";
+                                }
+                            }
+                        }
                     }
                 }
 
@@ -114,57 +155,70 @@ namespace Boid
                                 outPoint = tempPoint;
                                 outVector = tempVector;
                                 minSquaredDistance = tempMinSquareDistance;
+                                didAnythingHappen = true;
+                                debug += "mesh bounce;\r\n";
                             }
                         }
                     }
                 }
 
-                //test for BRep
-                Grasshopper.Kernel.Types.GH_Brep ghBrep = new Grasshopper.Kernel.Types.GH_Brep();
-                ghBrep.CastFrom(geo);
-                Brep testBrep = new Brep();
-                if (ghBrep.IsValid)
+                //test for plane
+                /*
+                Grasshopper.Kernel.Types.GH_Plane ghPlane = new Grasshopper.Kernel.Types.GH_Plane();
+                ghPlane.CastFrom(geo);
+                if (ghPlane.IsValid) { ghPlane.CastTo<Plane>(out testPlane); }
+                if (testPlane.IsValid)
                 {
-                    ghBrep.CastTo<Brep>(out testBrep);
-                    if (testBrep.IsValid)
+                    List<Point3d> curvePoints = new List<Point3d>();
+                    curvePoints.Add(point);
+                    curvePoints.Add(point + vector*1.1);
+                    Curve testCurve = Curve.CreateInterpolatedCurve(curvePoints, 1);
+
+                    Rhino.Geometry.Intersect.CurveIntersections intersections = Rhino.Geometry.Intersect.Intersection.CurvePlane(testCurve, testPlane, Rhino.RhinoDoc.ActiveDoc.ModelAbsoluteTolerance);
+                    if (intersections != null)
                     {
-                        Line testLine = new Line(point, point + vector);
-                        Curve testCurve = null;
-                        Grasshopper.Kernel.GH_Convert.ToCurve(testLine, ref testCurve, GH_Conversion.Both);
-                        Curve[] overlapCurves;
-                        Point3d[] intersectionPoints;
-                        Rhino.Geometry.Intersect.Intersection.CurveBrep(testCurve, testBrep, Rhino.RhinoDoc.ActiveDoc.ModelAbsoluteTolerance, out overlapCurves, out intersectionPoints);
-                        if (intersectionPoints.Count() > 0)
+                        if (intersections.Count() > 0)
                         {
-                            List<Point3d> intersectPoints = new List<Point3d>(intersectionPoints);
-                            intersectPoints.OrderBy(o => o.DistanceTo(point));
-                            Point3d tempPoint = intersectPoints.First();
-                            Point3d closestPoint = Point3d.Unset;
-                            ComponentIndex ci;
-                            double s;
-                            double t;
-                            Vector3d tempNormal = Vector3d.Unset;
-                            testBrep.ClosestPoint(tempPoint, out closestPoint, out ci, out s, out t, vector.Length, out tempNormal);
-
-                            testPlane = new Plane(tempPoint, tempNormal);
-
-                            Vector3d tempVector = Vector3d.Unset;
-                            double tempMinSquareDistance = minSquaredDistance;
-
-                            if (TestSituation(point, vector, testPlane, slowdown, ref tempPoint, ref tempVector, ref tempMinSquareDistance))
+                            Rhino.Geometry.Intersect.IntersectionEvent intersectionEvent = intersections.First();
+                            if (intersectionEvent.IsPoint)
                             {
-                                outPoint = tempPoint;
-                                outVector = tempVector;
-                                minSquaredDistance = tempMinSquareDistance;
+                                double tt = intersectionEvent.ParameterA;
+                                if (testCurve.Domain.IncludesParameter(tt))
+                                {
+                                    testPlane.Origin = intersectionEvent.PointA;
+
+                                    Point3d tempPoint = Point3d.Unset;
+                                    Vector3d tempVector = Vector3d.Unset;
+                                    double tempMinSquareDistance = minSquaredDistance;
+                                    
+
+                                    if (TestSituation(point, vector, testPlane, slowdown, ref tempPoint, ref tempVector, ref tempMinSquareDistance))
+                                    {
+                                        outPoint = tempPoint;
+                                        outVector = tempVector;
+                                        minSquaredDistance = tempMinSquareDistance;
+                                        didAnythingHappen = true;
+                                        debug += "plane bounce;\r\n";
+                                    }
+                                }
                             }
                         }
                     }
                 }
+                 */
+            }
+
+            if (!didAnythingHappen)
+            {
+                outPoint = new Point3d(backupPoint + backupVector);
+                outVector = backupVector;
+                debug += "no bounce;\r\n";
             }
 
             // output
             DA.SetData(0, outPoint);
             DA.SetData(1, outVector);
+           // DA.SetData(2, debug);
         }
 
         private Boolean TestSituation(Rhino.Geometry.Point3d point, Rhino.Geometry.Vector3d vector, Rhino.Geometry.Plane testPlane, double slowdown, ref Rhino.Geometry.Point3d outPoint, ref Rhino.Geometry.Vector3d outVector, ref double minSquaredDistance)
