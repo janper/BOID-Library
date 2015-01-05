@@ -20,6 +20,7 @@ namespace Boid
             pManager.AddVectorParameter("Agent motion vectors", "V", "Current motion vectors of the agents. Zero length vector causes a random vector.", GH_ParamAccess.list);
             pManager.AddIntervalParameter("Angle spread domain", "D", "Random motion angle deviation range.", GH_ParamAccess.list, new Rhino.Geometry.Interval(0, Math.PI));
             pManager.AddIntegerParameter("Random seed", "S", "Random seed for the newly created motion vectors.", GH_ParamAccess.list, 2);
+            pManager.AddNumberParameter("Absolute multiplier", "*", "Output vector length multiplier. By default the vectors maintain their original length. Optimal value is 1. Less than 0 = negative effect, 0 = no motion, 1 = full effect, above 1 = acceleration", GH_ParamAccess.list, 1);
         }
 
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
@@ -33,6 +34,7 @@ namespace Boid
             List<Rhino.Geometry.Vector3d> vectors = new List<Rhino.Geometry.Vector3d>();
             List<Rhino.Geometry.Interval> intervals = new List<Rhino.Geometry.Interval>();
             List<int> seeds = new List<int>();
+            List<double> multipliers = new List<double>();
 
             // Daclare a variable for the output
             List<Rhino.Geometry.Vector3d> newVectors = new List<Rhino.Geometry.Vector3d>();
@@ -42,6 +44,7 @@ namespace Boid
             if (!DA.GetDataList(0, vectors)) { return; }
             if (!DA.GetDataList(1, intervals)) { return; }
             DA.GetDataList(2, seeds);
+            if (!DA.GetDataList(3, multipliers)) { return; }
 
             int max = Math.Max(vectors.Count, Math.Max(intervals.Count, seeds.Count));
 
@@ -105,7 +108,7 @@ namespace Boid
                 double rotationAngle = interval.T0 + rnd.NextDouble() * (interval.T1 - interval.T0);
                 vector.Rotate(rotationAngle, rotationAxis);
 
-                newVectors.Add(vector);
+                newVectors.Add(vector * multipliers[(i >= multipliers.Count) ? multipliers.Count - 1 : i]);
             }
 
             // output

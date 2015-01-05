@@ -21,6 +21,7 @@ namespace Boid
         {
             pManager.AddVectorParameter("Agent motion vector", "V", "Current motion vectors of the agents", GH_ParamAccess.item);
             pManager.AddVectorParameter("Flock motion vectors", "FV", "Current motion vectors of the flock", GH_ParamAccess.list);
+            pManager.AddNumberParameter("Multiplier", "*", "Output vector length multiplier. Optimal values around 0.10. Less than 0 = negative effect, 0 = no motion, 1 = immediate effect, above 1 = overdone effect", GH_ParamAccess.item, 0.1);
         }
 
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
@@ -31,9 +32,9 @@ namespace Boid
         protected override void SolveInstance(IGH_DataAccess DA)
         {
             // Declare variables for the input
-
             Rhino.Geometry.Vector3d vector = new Rhino.Geometry.Vector3d();
             List<Rhino.Geometry.Vector3d> flock = new List<Rhino.Geometry.Vector3d>();
+            double multiplier = 1;
 
             // Daclare a variable for the output
             List<Rhino.Geometry.Vector3d> newVectors = new List<Rhino.Geometry.Vector3d>();
@@ -41,6 +42,7 @@ namespace Boid
             //check inputs
             if (!DA.GetData(0, ref vector)) { return; }
             if (!DA.GetDataList(1, flock)) { return; }
+            if (!DA.GetData(2, ref multiplier)) { return; }
 
             if ((flock.Count == 0) || (flock == null)) { return; }
 
@@ -54,7 +56,7 @@ namespace Boid
             }
             avgVector /= flock.Count;
 
-            DA.SetData(0, avgVector);
+            DA.SetData(0, avgVector*multiplier);
         }
 
 

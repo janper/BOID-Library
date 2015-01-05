@@ -63,6 +63,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Bounce.cs" />
+    <Compile Include="planarize.cs" />
     <Compile Include="Revolve.cs" />
     <Compile Include="Slide.cs" />
     <Compile Include="Stick.cs" />
@@ -122,6 +123,9 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Resources\bounce_icon.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\planarize.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

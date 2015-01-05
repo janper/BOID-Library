@@ -20,9 +20,10 @@ namespace Boid
 
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
-            pManager.AddPointParameter("Agent location point", "P", "Current location points of the agents", GH_ParamAccess.item);
+            pManager.AddPointParameter("Agent location point", "P", "Current location points of the agents.", GH_ParamAccess.item);
             pManager.AddGeometryParameter("Reference geometry", "G", "Reference geometry to stick to.", GH_ParamAccess.list);
-            pManager.AddIntervalParameter("Search distance", "D", "Search distance domain. x to 0 =  infinity", GH_ParamAccess.item, new Rhino.Geometry.Interval(0, 0));
+            pManager.AddIntervalParameter("Search distance", "D", "Search distance domain. x to 0 = infinity", GH_ParamAccess.item, new Rhino.Geometry.Interval(0, 0));
+            pManager.AddNumberParameter("Multiplier", "*", "Output vector length multiplier. Optimal values around 0.10. Less than 0 = negative effect, 0 = no motion, 1 = immediate effect, above 1 = overdone effect", GH_ParamAccess.item, 0.1);
         }
 
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
@@ -37,6 +38,7 @@ namespace Boid
             Rhino.Geometry.Point3d point = Rhino.Geometry.Point3d.Unset;
             List<Grasshopper.Kernel.Types.GH_GeometricGooWrapper> geometry = new List<Grasshopper.Kernel.Types.GH_GeometricGooWrapper>();
             Rhino.Geometry.Interval distances = Rhino.Geometry.Interval.Unset;
+            double multiplier = 1;
 
 
             // Daclare a variable for the output
@@ -46,6 +48,7 @@ namespace Boid
             if (!DA.GetData(0, ref point)) { return; }
             if (!DA.GetDataList(1, geometry)) { return; }
             if (!DA.GetData(2, ref distances)) { return; }
+            if (!DA.GetData(3, ref multiplier)) { return; }
 
             if ((geometry.Count == 0) || (geometry == null)) { return; }
             if (point == null) { return; }
@@ -117,7 +120,7 @@ namespace Boid
             }
 
             // output
-            DA.SetData(0, minVector);
+            DA.SetData(0, minVector*multiplier);
         }
 
 
