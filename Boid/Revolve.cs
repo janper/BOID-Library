@@ -69,27 +69,12 @@ namespace Boid
             foreach (Grasshopper.Kernel.Types.GH_GeometricGooWrapper geo in geometry)
             {
                 Rhino.Geometry.Point3d testPoint = Rhino.Geometry.Point3d.Unset;
-                Rhino.Geometry.Plane testPlane = Rhino.Geometry.Plane.Unset;
+                //Rhino.Geometry.Plane testPlane = Rhino.Geometry.Plane.Unset;
                 geo.CastTo<Rhino.Geometry.Point3d>(ref testPoint);
                 if (testPoint.IsValid)
                 {
                     rotationPlane = new Rhino.Geometry.Plane(testPoint, new Rhino.Geometry.Vector3d(point - testPoint), vector);   
                 }
-                
-                /*
-                geo.CastTo<Rhino.Geometry.Plane>(ref testPlane);
-                if (testPlane.IsValid)
-                {
-                    debug += "is a plane; ";
-
-                    Rhino.Geometry.Transform project = Rhino.Geometry.Transform.PlanarProjection(testPlane);
-                    Rhino.Geometry.Vector3d projectedVector = vector;
-                    projectedVector.Transform(project);
-                    Rhino.Geometry.Vector3d.CrossProduct(projectedVector, vector);
-                    testPoint = testPlane.ClosestPoint(point);
-                    rotationPlane = new Rhino.Geometry.Plane(testPoint, normal);
-                }
-                */
 
                 Rhino.Geometry.Curve testCurve = null;
                 geo.CastTo<Rhino.Geometry.Curve>(ref testCurve);
@@ -134,7 +119,7 @@ namespace Boid
                 {
                     Rhino.Geometry.Vector3d testVector = new Rhino.Geometry.Vector3d(rotationPlane.Origin - point);
                     double squaredDistance = testVector.SquareLength;
-                    if ( (squaredDistance > minSquaredDistance) && ((squaredDistance < maxSquaredDistance) || (maxSquaredDistance <= 0)) )
+                    if ( (squaredDistance > minSquaredDistance) && ((squaredDistance < maxSquaredDistance) || (maxSquaredDistance <= 0))  && (squaredDistance<minDistance) )
                     {
                         minDistance = squaredDistance;
                         Rhino.Geometry.Transform rotate = Rhino.Geometry.Transform.Rotation(angle, rotationPlane.Normal, rotationPlane.Origin);

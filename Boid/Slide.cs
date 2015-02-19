@@ -24,7 +24,7 @@ namespace Boid
             pManager.AddVectorParameter("Agent motion vector", "V", "Current motion vectors of the agents", GH_ParamAccess.item);
             pManager.AddGeometryParameter("Reference geometry", "G", "Reference geometry to stick to.", GH_ParamAccess.list);
             pManager.AddIntervalParameter("Search distance", "D", "Search distance domain. x to 0 =  infinity", GH_ParamAccess.item, new Rhino.Geometry.Interval(0, 0));
-            pManager.AddNumberParameter("Multiplier", "*", "Output vector length multiplier. Optimal values around 0.10. Less than 0 = negative effect, 0 = no motion, 1 = immediate effect, above 1 = overdone effect", GH_ParamAccess.item, 0.1);
+            pManager.AddNumberParameter("Multiplier", "*", "Output vector length multiplier. Optimal values around 1. Less than 0 = negative effect, 0 = no motion, below 1 = slowing dwon, 1 = constant speed, above 1 = rapid speed-up", GH_ParamAccess.item, 1);
         }
 
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
